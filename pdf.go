@@ -53,7 +53,7 @@ const (
 const (
 	documentWidth  = "8.27"
 	documentHeight = "11.7"
-	indexFileName  = "header.html"
+	indexFileName  = "index.html"
 	headerFileName = "header.html"
 	footerFileName = "footer.html"
 )
@@ -126,11 +126,24 @@ func (e *pdfExporter) Landscape() Pdf {
 }
 
 func (e *pdfExporter) Export() ([]byte, error) {
+	if err := e.createFields(); err != nil {
+		return []byte{}, err
+	}
+	if err := e.writer.Close(); err != nil {
+		return []byte{}, err
+	}
 	res, err := http.Post(e.endpoint, e.writer.FormDataContentType(), e.buffer)
 	if err != nil {
 		return []byte{}, err
 	}
-	return io.ReadAll(res.Body)
+	processed, err := io.ReadAll(res.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+	if err := res.Body.Close(); err != nil {
+		return []byte{}, err
+	}
+	return processed, nil
 }
 
 func (e *pdfExporter) MustExport() []byte {
